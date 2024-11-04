@@ -73,8 +73,6 @@ interface SortConfig {
 
 export const NotesManag = () => {
   const [notas, setNotas] = useState<Note[]>([]);
-  const [filteredNotas, setFilteredNotas] = useState<Note[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: null,
     direction: "ascending",
@@ -83,6 +81,28 @@ export const NotesManag = () => {
   const [filterAño, setFilterAño] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const navigate = useNavigate();
+
+  const [filteredNotas, setFilteredNotas] = useState<Note[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10; // Cambia esto si deseas un número diferente de notas por página
+  const totalPages = Math.ceil(filteredNotas.length / pageSize);
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const indexOfLastNota = currentPage * pageSize;
+  const indexOfFirstNota = indexOfLastNota - pageSize;
+  const currentNotas = filteredNotas.slice(indexOfFirstNota, indexOfLastNota);
 
   const fetchNotas = async () => {
     try {
@@ -122,6 +142,11 @@ export const NotesManag = () => {
   };
 
   const handleDelete = async (id: number) => {
+    if (
+      !window.confirm("¿Estás seguro de que quieres eliminar esta materia?")
+    ) {
+      return;
+    }
     try {
       const response = await fetch(`http://localhost:8080/final-notes/${id}`, {
         method: "DELETE",
@@ -177,187 +202,211 @@ export const NotesManag = () => {
     // Add logic to handle new nota submission
     setIsAddDialogOpen(false);
   };
+
   
   return (
-
-      
-    <div className="flex flex-col min-h-screen w-full h-full"> {/* Contenedor principal */}
-    <NavBar />
-
-    <div className="flex-grow"> {/* Esta parte ocupa el espacio restante */}
-      <CardHeader className="bg-[#FFFFFF]">
-        <div className="flex justify-around items-center ">
-          <CardTitle className="text-3xl font-bold text-black flex items-center">
-            <Award className="mr-2" /> Listado de Notas
-          </CardTitle>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  className="bg-[#70b000] text-[#2d039c] hover:bg-[#456807]"
-                  onClick={handleCreate}
-                >
-                  <Plus  className="mr-2 h-4 w-4" /> Añadir Nota
-                </Button>
-              </TooltipTrigger>
-              {/* <TooltipContent>
-                <p>Agregar una nueva nota</p>
-              </TooltipContent> */}
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-      </CardHeader>
-
-      <CardContent className="pt-6">
-        <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
-          <div className="relative flex-grow max-w-md">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
-            <Input
-              placeholder="Buscar por DNI o materia"
-              className="pl-8"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="flex gap-2">
-            <Select value={filterMateria} onValueChange={setFilterMateria}>
-              <SelectTrigger className="w-[180px] bg-white border border-gray-300">
-                <Book className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Filtrar por materia" />
-              </SelectTrigger>
-              <SelectContent className="bg-white border border-gray-300">
-                <SelectItem value=" ">Todas las materias</SelectItem>
-                {materias.map((materia) => (
-                  <SelectItem key={materia} value={materia}>
-                    {materia}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={filterAño} onValueChange={setFilterAño}>
-              <SelectTrigger className="w-[180px] bg-white border border-gray-300">
-                <Calendar className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Filtrar por año" />
-              </SelectTrigger>
-              <SelectContent className="bg-white border border-gray-300">
-                <SelectItem value=" ">Todos los años</SelectItem>
-                {años.map((año) => (
-                  <SelectItem key={año} value={año.toString()}>
-                    {año}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <div className="overflow-x-auto rounded-lg border border-gray-200">
-        <Table>
-  <TableHeader className="bg-gray-100">
-    <TableRow>
-      <TableHead className="w-[100px]">
-        <Button
-          variant="ghost"
-          onClick={() => handleSort("nota")}
-          className="font-semibold"
-        >
-          Nota{" "}
-          {sortConfig.key === "nota" && (
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          )}
-        </Button>
-      </TableHead>
-      <TableHead>
-        <Button
-          variant="ghost"
-          onClick={() => handleSort("year")}
-          className="font-semibold"
-        >
-          Año cursada{" "}
-          {sortConfig.key === "year" && (
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          )}
-        </Button>
-      </TableHead>
-      <TableHead>
-        <Button
-          variant="ghost"
-          onClick={() => handleSort("subjectName")}
-          className="font-semibold"
-        >
-          Materia{" "}
-          {sortConfig.key === "subjectName" && (
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          )}
-        </Button>
-      </TableHead>
-      <TableHead>
-        <Button
-          variant="ghost"
-          onClick={() => handleSort("dniStudent")}
-          className="font-semibold"
-        >
-          DNI Estudiante{" "}
-          {sortConfig.key === "dniStudent" && (
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          )}
-        </Button>
-      </TableHead>
-      <TableHead>
-        <Button
-          variant="ghost"
-          onClick={() => handleSort("date")}
-          className="font-semibold"
-        >
-          Fecha registro{" "}
-          {sortConfig.key === "date" && (
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          )}
-        </Button>
-      </TableHead>
-      <TableHead>Acciones</TableHead>
-    </TableRow>
-  </TableHeader>
-  <TableBody>
-    {filteredNotas.map((finalNote) => (
-      <TableRow key={finalNote.id} className="hover:bg-gray-50">
-        <TableCell>
-          <Badge
-            className={`${getNotaBadgeColor(finalNote.nota)} text-white`}
-          >
-            {finalNote.nota.toFixed(1)}
-          </Badge>
-        </TableCell>
-        <TableCell>{finalNote.year}</TableCell>
-        <TableCell>{finalNote.subjectName}</TableCell>
-        <TableCell>{finalNote.dniStudent}</TableCell>
-        <TableCell>{finalNote.date.toLocaleString()}</TableCell>
-        <TableCell>
-          <div className="flex space-x-2">
+    <div className="flex flex-col min-h-screen w-full h-full">
+      {" "}
+      {/* Contenedor principal */}
+      <NavBar />
+      <div className="flex-grow">
+        {" "}
+        {/* Esta parte ocupa el espacio restante */}
+        <CardHeader className="bg-[#FFFFFF]">
+          <div className="flex justify-around items-center ">
+            <CardTitle className="text-3xl font-bold text-black flex items-center">
+              <Award className="mr-2" /> Listado de Notas
+            </CardTitle>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={() => handleDelete(finalNote.id)}>
-                    <Trash2 className="h-4 w-4 text-red-500" />
+                  <Button
+                    className="bg-[#70b000] text-[#2d039c] hover:bg-[#456807]"
+                    onClick={handleCreate}
+                  >
+                    <Plus className="mr-2 h-4 w-4" /> Añadir Nota
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent >
-                <p>Eliminar nota</p>
-                </TooltipContent>
+                {/* <TooltipContent>
+                <p>Agregar una nueva nota</p>
+              </TooltipContent> */}
               </Tooltip>
             </TooltipProvider>
           </div>
-        </TableCell>
-      </TableRow>
-    ))}
-  </TableBody>
-</Table>
-        </div>
-      </CardContent>
-    </div>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
+            <div className="relative flex-grow max-w-md">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
+              <Input
+                placeholder="Buscar por DNI o materia"
+                className="pl-8"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Select value={filterMateria} onValueChange={setFilterMateria}>
+                <SelectTrigger className="w-[180px] bg-white border border-gray-300">
+                  <Book className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="Filtrar por materia" />
+                </SelectTrigger>
+                <SelectContent className="bg-white border border-gray-300">
+                  <SelectItem value=" ">Todas las materias</SelectItem>
+                  {materias.map((materia) => (
+                    <SelectItem key={materia} value={materia}>
+                      {materia}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-        <Footer></Footer>
-  </div>
-  
+              <Select value={filterAño} onValueChange={setFilterAño}>
+                <SelectTrigger className="w-[180px] bg-white border border-gray-300">
+                  <Calendar className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="Filtrar por año" />
+                </SelectTrigger>
+                <SelectContent className="bg-white border border-gray-300">
+                  <SelectItem value=" ">Todos los años</SelectItem>
+                  {años.map((año) => (
+                    <SelectItem key={año} value={año.toString()}>
+                      {año}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="overflow-x-auto rounded-lg border border-gray-200">
+            <Table>
+              <TableHeader className="bg-gray-100">
+                <TableRow>
+                  <TableHead className="w-[100px]">
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("nota")}
+                      className="font-semibold"
+                    >
+                      Nota{" "}
+                      {sortConfig.key === "nota" && (
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                      )}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("year")}
+                      className="font-semibold"
+                    >
+                      Año cursada{" "}
+                      {sortConfig.key === "year" && (
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                      )}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("subjectName")}
+                      className="font-semibold"
+                    >
+                      Materia{" "}
+                      {sortConfig.key === "subjectName" && (
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                      )}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("dniStudent")}
+                      className="font-semibold"
+                    >
+                      DNI Estudiante{" "}
+                      {sortConfig.key === "dniStudent" && (
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                      )}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("date")}
+                      className="font-semibold"
+                    >
+                      Fecha registro{" "}
+                      {sortConfig.key === "date" && (
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                      )}
+                    </Button>
+                  </TableHead>
+                  <TableHead>Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {currentNotas.map((finalNote) => (
+                  <TableRow key={finalNote.id} className="hover:bg-gray-50">
+                    <TableCell>
+                      <Badge
+                        className={`${getNotaBadgeColor(
+                          finalNote.nota
+                        )} text-white`}
+                      >
+                        {finalNote.nota.toFixed(1)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{finalNote.year}</TableCell>
+                    <TableCell>{finalNote.subjectName}</TableCell>
+                    <TableCell>{finalNote.dniStudent}</TableCell>
+                    <TableCell>{finalNote.date.toLocaleString()}</TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDelete(finalNote.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Eliminar nota</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <div className="flex justify-between items-center mt-4">
+              <button
+                onClick={handlePrevPage}
+                disabled={currentPage === 1}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Anterior
+              </button>
+              <span>
+                Página {currentPage} de {totalPages}
+              </span>
+              <button
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
+        </CardContent>
+      </div>
+      <Footer></Footer>
+    </div>
   );
 };

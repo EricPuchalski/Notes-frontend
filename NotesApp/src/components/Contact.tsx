@@ -30,13 +30,13 @@ export default function Contact() {
   const developers = [
     {
       name: 'Puchalski Eric',
-      github: 'https://github.com/dev1',
+      github: 'https://github.com/ericpuchalski',
       whatsapp: 'https://wa.me/3765009935'
     },
     {
       name: 'Villalba Gonzalo',
-      github: 'https://github.com/dev2',
-      whatsapp: 'https://wa.me/3765009935'
+      github: 'https://github.com/gonzavillalba',
+      whatsapp: 'https://wa.me/3764900701'
     }
   ]
 

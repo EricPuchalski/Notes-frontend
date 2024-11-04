@@ -57,7 +57,7 @@ export default function CreateStudent() {
 
     // Verificar si el email ya está en uso
     try {
-      const emailResponse = await fetch(`http://localhost:8080/${formData.email}`);
+      const emailResponse = await fetch(`http://localhost:8080/email/${formData.email}`);
       if (emailResponse.ok) {
         setError("Ya existe un estudiante con ese email.");
         return;
