@@ -27,6 +27,9 @@ import { useNavigate } from "react-router-dom";
     const handleNote = () => {
       navigate("/managment");
     };
+    const handleContact = () => {
+      navigate("/contact");
+    };
 
     useEffect(() => {
       const interval = setInterval(() => {

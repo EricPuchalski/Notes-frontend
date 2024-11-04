@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
 import {
   Bell,
@@ -14,16 +16,20 @@ import NavBar from "./Navbar";
 import Footer from "./Footer";
 
 interface Student {
+  id: number;
+  name: string;
+  surname: string;
   dni: string;
-  nombre: string;
-  apellido: string;
+  email: string;
+  phone: string;
 }
 
 interface Subject {
   id: number;
-  nombre: string;
-  anio: string;
+  name: string;
+  careerName: string;
 }
+
 interface Inscription {
   [x: string]: any;
   id: number;
@@ -47,7 +53,11 @@ export default function GestionEducativa() {
   const [activeTab, setActiveTab] = useState("estudiantes");
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [newSubject, setNewSubject] = useState("");
+  const [newCareerName, setNewCareerName] = useState("");
+  const [materias, setMaterias] = useState<Subject[]>([]);
   const [errorMessage, setErrorMessage] = useState(""); // Estado para el mensaje de error
+  const [errorMessageSubject, setErrorMessageSubject] = useState("");
+
   const [newYear, setNewYear] = useState("");
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   const [newInscription, setNewInscription] = useState<Omit<Inscription, "id">>(
@@ -138,6 +148,13 @@ export default function GestionEducativa() {
   };
 
   useEffect(() => {
+    fetch("http://localhost:8080/subjects")
+      .then((response) => response.json())
+      .then((data) => setMaterias(data))
+      .catch((error) => console.error("Error al obtener materias:", error));
+  }, []);
+
+  useEffect(() => {
     const fetchAlumnos = async () => {
       try {
         const response = await fetch("http://localhost:8080/students");
@@ -170,24 +187,49 @@ export default function GestionEducativa() {
     fetchMaterias();
   }, []);
 
-  useEffect(() => {
-    const fetchInscripciones = async () => {
-      try {
-        const response = await fetch(
-          "http://localhost:8080/inscriptions/active"
+  const handleDeleteSubject = async (id: number) => {
+    console.log(currentSubjects); // Agrega esta línea para ver qué contiene currentSubjects
+
+    if (
+      !window.confirm("¿Estás seguro de que quieres eliminar esta materia?")
+    ) {
+      return;
+    }
+    try {
+      const response = await fetch(`http://localhost:8080/subjects/${id}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        alert("Materia eliminada con éxito!");
+        setSubjects((prevSubjects) =>
+          prevSubjects.filter((subject) => subject.id !== id)
         );
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        setInscriptions(data);
-        console.log(data);
-      } catch (error) {
-        console.error("Error fetching inscriptions:", error);
+      } else {
+        alert("Error al eliminar la nota. Por favor, inténtelo de nuevo.");
       }
-    };
-    fetchInscripciones();
-  }, []);
+    } catch (error) {
+      console.error("Error al eliminar la Materia:", error);
+      alert("Error al eliminar la Materia. Por favor, inténtelo de nuevo.");
+    }
+  };
+  // useEffect(() => {
+  //   const fetchInscripciones = async () => {
+  //     try {
+  //       const response = await fetch(
+  //         "http://localhost:8080/inscriptions/active"
+  //       );
+  //       if (!response.ok) {
+  //         throw new Error(`HTTP error! status: ${response.status}`);
+  //       }
+  //       const data = await response.json();
+  //       setInscriptions(data);
+  //       console.log(data);
+  //     } catch (error) {
+  //       console.error("Error fetching inscriptions:", error);
+  //     }
+  //   };
+  //   fetchInscripciones();
+  // }, []);
 
   const handleCreateInscription = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -240,13 +282,8 @@ export default function GestionEducativa() {
       setIsLoading(false);
     }
   };
-
   const handleCreateSubject = async () => {
-    // Asegúrate de que newYear sea un número y no esté vacío
-    if (!newSubject.trim() || !newYear.trim() || isNaN(parseInt(newYear)))
-      return;
-
-    console.log(newYear);
+    if (!newSubject.trim() || !newCareerName.trim()) return;
 
     try {
       const response = await fetch("http://localhost:8080/subjects", {
@@ -254,24 +291,25 @@ export default function GestionEducativa() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ nombre: newSubject, anio: parseInt(newYear) }), // Convierte newYear a número
+        body: JSON.stringify({ name: newSubject, careerName: newCareerName }),
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error("No se encontró la carrera especificada");
       }
-      console.log(newYear);
+
       const createdSubject = await response.json();
+      alert("Materia creada exitosamente");
       setSubjects((prev) => [...prev, createdSubject]);
       setNewSubject("");
-      setNewYear(""); // Reseteamos el campo del año
-      console.log(createdSubject);
+      setNewCareerName("");
+      setErrorMessage(""); // Limpiar el mensaje de error al crear con éxito
     } catch (error) {
-      console.error("Error creando materia:", error);
+      setErrorMessage(`No existe una carrera con el nombre: ${newCareerName}`); // Establecer el mensaje de error en el estado
     }
   };
 
-  const handleDeleteStudent = async (dni: string) => {
+  const handleDeleteStudent = async (id: number) => {
     if (
       !window.confirm("¿Estás seguro de que quieres eliminar este estudiante?")
     ) {
@@ -279,12 +317,9 @@ export default function GestionEducativa() {
     }
 
     try {
-      const response = await fetch(
-        `http://localhost:8080/students/disable/${dni}`,
-        {
-          method: "PUT",
-        }
-      );
+      const response = await fetch(`http://localhost:8080/students/${id}`, {
+        method: "DELETE",
+      });
 
       if (!response.ok) {
         throw new Error(`Error eliminando estudiante: ${response.status}`);
@@ -292,7 +327,7 @@ export default function GestionEducativa() {
 
       // Filtra el estudiante eliminado de la lista de estudiantes
       setAlumnos((prevStudents) =>
-        prevStudents.filter((student) => student.dni !== dni)
+        prevStudents.filter((student) => student.id !== id)
       );
     } catch (error) {
       console.error("Error eliminando estudiante:", error);
@@ -301,8 +336,8 @@ export default function GestionEducativa() {
 
   return (
     <>
-    <NavBar></NavBar>
-    <div className="flex flex-col min-h-screen bg-gray-100 bg-[url('/books.jpg')] bg-cover bg-center">
+      <NavBar></NavBar>
+      <div className="flex flex-col min-h-screen bg-gray-100 bg-[url('/books.jpg')] bg-cover bg-center">
         <main className="flex-grow p-6 max-w-4xl mx-auto w-full">
           <div className="flex space-x-4 mb-4">
             {["estudiantes", "materias"].map((tab) => (
@@ -346,26 +381,22 @@ export default function GestionEducativa() {
                     <th className="text-left p-2">DNI</th>
                     <th className="text-left p-2">Nombre</th>
                     <th className="text-left p-2">Apellido</th>
+                    <th className="text-left p-2">Email</th>
                     <th className="text-left p-2">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   {currentStudents.map((student) => (
-                    <tr key={student.dni} className="hover:bg-gray-50">
+                    <tr key={student.id} className="hover:bg-gray-50">
                       <td className="p-2">{student.dni}</td>
-                      <td className="p-2">{student.nombre}</td>
-                      <td className="p-2">{student.apellido}</td>
+                      <td className="p-2">{student.name}</td>
+                      <td className="p-2">{student.surname}</td>
+                      <td className="p-2">{student.email}</td>
                       <td className="p-2">
                         <div className="flex space-x-2">
                           <button
-                            className="p-2 hover:bg-green-700 rounded"
-                            onClick={() => handleEditStudent(student)}
-                          >
-                            <Pencil size={16} />
-                          </button>
-                          <button
                             className="p-2 hover:bg-red-700 rounded"
-                            onClick={() => handleDeleteStudent(student.dni)}
+                            onClick={() => handleDeleteStudent(student.id)}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -410,6 +441,13 @@ export default function GestionEducativa() {
                   onChange={(e) => setNewSubject(e.target.value)}
                   className="flex-grow px-3 py-2 border rounded-l-md"
                 />
+                <input
+                  type="text"
+                  placeholder="Nombre carrera"
+                  value={newCareerName}
+                  onChange={(e) => setNewCareerName(e.target.value)}
+                  className="flex-grow px-3 py-2 border rounded-l-md"
+                />
                 <button
                   onClick={handleCreateSubject}
                   className="bg-blue-600 text-white px-4 py-2 rounded-r-md hover:bg-blue-700"
@@ -417,79 +455,36 @@ export default function GestionEducativa() {
                   <Plus size={20} />
                 </button>
               </div>
+              {errorMessage && (
+                <p className="text-red-500 text-sm">{errorMessage}</p>
+              )}
               <table className="w-full">
                 <thead>
                   <tr className="bg-gray-100">
                     <th className="text-left p-2">Nombre</th>
-                    <th className="text-left p-2">Año</th>
+                    <th className="text-left p-2">Carrera</th>
                     <th className="text-left p-2">Acciones</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {currentSubjects.map((subject) => (
-                    <tr key={subject.id} className="hover:bg-gray-50">
-                      <td className="p-2">
-                        {editingSubject?.id === subject.id ? (
-                          <input
-                            type="text"
-                            value={editingSubject.nombre}
-                            onChange={(e) =>
-                              setEditingSubject({
-                                ...editingSubject,
-                                nombre: e.target.value,
-                              })
-                            }
-                            className="w-full px-2 py-1 border rounded"
-                          />
-                        ) : (
-                          subject.nombre
-                        )}
-                      </td>
-                      <td className="p-2">
-                        {editingSubject?.id === subject.id ? (
-                          <input
-                            type="number"
-                            value={editingSubject.anio}
-                            onChange={(e) =>
-                              setEditingSubject({
-                                ...editingSubject,
-                                anio: e.target.value,
-                              })
-                            }
-                            className="w-full px-2 py-1 border rounded"
-                          />
-                        ) : (
-                          subject.anio
-                        )}
-                      </td>
-                      <td className="p-2">
-                        <div className="flex space-x-2">
-                          {editingSubject?.id === subject.id ? (
-                            <button
-                              // onClick={() => handleUpdateSubject(editingSubject)}
-                              className="p-1 hover:bg-green-200 rounded text-green-600"
-                            >
-                              Guardar
-                            </button>
-                          ) : (
-                            <button
-                              // onClick={() => handleEditSubject(subject)}
-                              className="p-2 hover:bg-green-700 rounded"
-                            >
-                              <Pencil size={16} />
-                            </button>
-                          )}
-                          <button
-                            // onClick={() => handleDeleteSubject(subject.id)}
-                            className="p-1 hover:bg-red-700 rounded"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
+<tbody>
+  {currentSubjects.map((subject) => (
+    <tr key={subject.id} className="hover:bg-gray-50">
+      <td className="p-2">{subject.name}</td>
+      <td className="p-2">{subject.careerName}</td>
+      <td className="p-2">
+        <div className="flex space-x-2">
+          <button className="p-2 hover:bg-green-700 rounded">
+            <Pencil size={16} />
+          </button>
+          <button className="p-1 hover:bg-red-700 rounded" onClick={() => handleDeleteSubject(subject.id)}>
+            <Trash2 size={16} />
+          </button>
+        </div>
+      </td>
+    </tr>
+  ))}
+</tbody>
+
               </table>
               <div className="flex justify-between items-center mt-4">
                 <button
@@ -512,7 +507,7 @@ export default function GestionEducativa() {
               </div>
             </div>
           )}
-         {/* {activeTab === "inscripciones" && (
+          {/* {activeTab === "inscripciones" && (
             <div className="bg-white p-6 rounded-lg shadow-md">
               <h2 className="text-2xl font-semibold mb-6 text-indigo-700">
                 Inscripciones

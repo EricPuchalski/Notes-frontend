@@ -34,7 +34,7 @@ const NavBar = () => {
                       Nota
                     </a>
                     <a
-                      href="#"
+                      href="/contact"
                       className="text-white border-[#b4babd] px-3 py-2 transition-colors hover:bg-[#b4babd] hover:text-[#2d039c] flex items-center h-full"
                     >
                       Contacto

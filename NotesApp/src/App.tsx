@@ -9,6 +9,7 @@ import FinalNote from './components/FinalNote';
 import Managment from './components/Managment';
 import CreateStudent from './components/CreateStudent';
 import { NotesManag } from './components/NotesManag';
+import Conctact from './components/Contact';
 
 function App() {
   const [count, setCount] = useState(0)
@@ -22,6 +23,7 @@ function App() {
       <Route path="/managment/create-student" element={<CreateStudent/>} />
       <Route path="/notes" element={<NotesManag/>} />
       <Route path="/notes/create" element={<FinalNote/>} />
+      <Route path="/contact" element={<Conctact/>} />
     </Routes>
   </Router>
     </>

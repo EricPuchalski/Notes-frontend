@@ -1,18 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Footer from "./Footer";
 import NavBar from "./Navbar";
 import { useNavigate } from "react-router-dom";
-
-const materias = [
-  "Matemáticas",
-  "Lengua",
-  "Historia",
-  "Geografía",
-  "Física",
-  "Química",
-  "Biología",
-  "Educación Física",
-];
 
 // Define el tipo para formData que contiene todos los campos
 type FormData = {
@@ -26,9 +15,16 @@ type FormData = {
 type Errors = {
   [key in keyof FormData]?: string;
 };
+interface Subject {
+  id: number;
+  name: string;
+  tacher: string;
+  careerName: string;
+}
 
 export default function Nota() {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+  const [materias, setMaterias] = useState<Subject[]>([]);
   const [formData, setFormData] = useState<FormData>({
     nota: "",
     año: "",
@@ -48,7 +44,29 @@ export default function Nota() {
     }));
   };
 
-  const validateForm = () => {
+  useEffect(() => {
+    fetch("http://localhost:8080/subjects")
+      .then((response) => response.json())
+      .then((data) => setMaterias(data))
+      .catch((error) => console.error("Error al obtener materias:", error));
+  }, []);
+
+  const checkStudentExists = async (dni: string) => {
+    try {
+      const response = await fetch(`http://localhost:8080/students/${dni}`);
+      if (response.ok) {
+        const student = await response.json();
+        return student;
+      } else {
+        return null;
+      }
+    } catch (error) {
+      console.error("Error al verificar estudiante:", error);
+      return null;
+    }
+  };
+
+  const validateForm = async () => {
     let newErrors: Errors = {};
     if (
       !formData.nota ||
@@ -71,22 +89,50 @@ export default function Nota() {
     }
     if (!formData.dni || !/^\d{8}$/.test(formData.dni)) {
       newErrors.dni = "El DNI debe tener 8 dígitos";
+    } else {
+      const student = await checkStudentExists(formData.dni);
+      if (!student) {
+        newErrors.dni = "No existe un estudiante con el DNI ingresado";
+      }
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+    
 
-  const handleSubmit = (e: React.FormEvent) => {
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
-      console.log("Form submitted:", formData);
-      alert("Nota registrada con éxito!");
-      setFormData({
-        nota: "",
-        año: "",
-        materia: "",
-        dni: "",
-      });
+    if (await validateForm()) {
+      // Enviar los datos del formulario a http://localhost:8080/final-notes usando POST
+      try {
+        const response = await fetch("http://localhost:8080/final-notes", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            nota: Number(formData.nota),
+            year: Number(formData.año),
+            subjectName: formData.materia,
+            dniStudent: formData.dni,
+          }),
+        });
+        if (response.ok) {
+          alert("Nota registrada con éxito!");
+          setFormData({
+            nota: "",
+            año: "",
+            materia: "",
+            dni: "",
+          });
+        } else {
+          alert("Error al registrar la nota. Por favor, inténtelo de nuevo.");
+        }
+      } catch (error) {
+        console.error("Error al registrar la nota:", error);
+        alert("Error al registrar la nota. Por favor, inténtelo de nuevo.");
+      }
     }
   };
   const handleCancel = () => {
@@ -94,7 +140,7 @@ export default function Nota() {
   };
   return (
     <>
-    <NavBar></NavBar>
+      <NavBar></NavBar>
       <div
         className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8"
         style={{
@@ -105,7 +151,6 @@ export default function Nota() {
       >
         {/* El contenido del formulario va aquí */}
 
-        
         <div className="max-w-md w-full space-y-8">
           <form
             className="mt-8 space-y-6 bg-[#1b3906] p-8 shadow-md rounded-lg"
@@ -170,8 +215,8 @@ export default function Nota() {
                 >
                   <option value="">Seleccione una materia</option>
                   {materias.map((materia) => (
-                    <option key={materia} value={materia}>
-                      {materia}
+                    <option key={materia.id} value={materia.name}>
+                      {materia.name}
                     </option>
                   ))}
                 </select>
@@ -202,20 +247,22 @@ export default function Nota() {
               </div>
             </div>
 
-            <div className="flex justify-around gap-4"> {/* Agregar gap-4 */}
-  <button
-    type="submit"
-    className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#110e58] hover:bg-[#20027a] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2d039c]"
-  >
-    Registrar Nota
-  </button>
-  <button onClick={handleCancel}
-    className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#851306] hover:bg-[#5f0c03] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2d039c]"
-  >
-    Cancelar
-  </button>
-</div>
-
+            <div className="flex justify-around gap-4">
+              {" "}
+              {/* Agregar gap-4 */}
+              <button
+                type="submit"
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#110e58] hover:bg-[#20027a] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2d039c]"
+              >
+                Registrar Nota
+              </button>
+              <button
+                onClick={handleCancel}
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#851306] hover:bg-[#5f0c03] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2d039c]"
+              >
+                Cancelar
+              </button>
+            </div>
           </form>
         </div>
       </div>
