@@ -4,10 +4,13 @@ import React from "react";
 const Footer = () => {
   return (
     <>
-      <footer className="bg-gradient-to-r from-gray-800 to-gray-900 text-white">
+      <footer className="bg-gradient-to-r from-green-800 to-gray-900 text-white">
+        
         <div className="container mx-auto px-4 py-8">
+          
           <div className="flex flex-wrap justify-between">
             <div className="w-full md:w-1/3 mb-6 md:mb-0">
+            
               <h3 className="text-xl font-semibold mb-2 flex items-center">
                 <GraduationCap className="w-6 h-6 mr-2" />
                 NotesApp
@@ -46,6 +49,7 @@ const Footer = () => {
           <div className="border-t border-gray-700 mt-8 pt-6 text-center text-gray-400">
             <p>&copy; 2024 NotesApp. Todos los derechos reservados.</p>
           </div>
+          
         </div>
       </footer>
     </>
