@@ -55,93 +55,89 @@ import {
 import Footer from "./Footer";
 import NavBar from "./Navbar";
 
-// Mock data for notes
-const mockNotas = [
-  {
-    id: 1,
-    nota: 8.5,
-    año: 2023,
-    materia: "Matemáticas",
-    dni: "12345678",
-    fecha: "2023-05-15",
-  },
-  {
-    id: 2,
-    nota: 7.0,
-    año: 2023,
-    materia: "Lengua",
-    dni: "23456789",
-    fecha: "2023-05-20",
-  },
-  {
-    id: 3,
-    nota: 9.0,
-    año: 2023,
-    materia: "Historia",
-    dni: "34567890",
-    fecha: "2023-05-25",
-  },
-  {
-    id: 4,
-    nota: 6.5,
-    año: 2023,
-    materia: "Geografía",
-    dni: "45678901",
-    fecha: "2023-06-01",
-  },
-  {
-    id: 5,
-    nota: 8.0,
-    año: 2023,
-    materia: "Física",
-    dni: "56789012",
-    fecha: "2023-06-05",
-  },
-];
+interface Note {
+  id: number;
+  nota: number;
+  year: number;
+  subjectName: string;
+  dniStudent: string;
+  date: string;
+}
 
-// Define un tipo para las claves de los objetos que estás usando
-type NotaKey = "id" | "nota" | "año" | "materia" | "dni" | "fecha";
+type NotaKey = keyof Note;
 
-// Define el tipo de sortConfig
 interface SortConfig {
   key: NotaKey | null; // Permitir null
   direction: "ascending" | "descending";
 }
 
 export const NotesManag = () => {
-  const [notas, setNotas] = useState(mockNotas);
-  const [filteredNotas, setFilteredNotas] = useState(mockNotas);
+  const [notas, setNotas] = useState<Note[]>([]);
+  const [filteredNotas, setFilteredNotas] = useState<Note[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: null,
     direction: "ascending",
-  }); // Solo aquí
+  });
   const [filterMateria, setFilterMateria] = useState("");
   const [filterAño, setFilterAño] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const navigate = useNavigate();
 
-  const handleCreate = () => {
-    navigate("/notes/create");
+  const fetchNotas = async () => {
+    try {
+      const response = await fetch("http://localhost:8080/final-notes");
+      const data: Note[] = await response.json();
+      setNotas(data);
+      setFilteredNotas(data);
+    } catch (error) {
+      console.error("Error fetching notas:", error);
+    }
   };
+
+  useEffect(() => {
+    fetchNotas();
+  }, []);
 
   useEffect(() => {
     let result = notas;
     if (searchTerm) {
       result = result.filter(
         (nota) =>
-          nota.dni.includes(searchTerm) ||
-          nota.materia.toLowerCase().includes(searchTerm.toLowerCase())
+          nota.dniStudent.includes(searchTerm) ||
+          nota.subjectName.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     if (filterMateria) {
-      result = result.filter((nota) => nota.materia === filterMateria);
+      result = result.filter((nota) => nota.subjectName === filterMateria);
     }
     if (filterAño) {
-      result = result.filter((nota) => nota.año.toString() === filterAño);
+      result = result.filter((nota) => nota.year.toString() === filterAño);
     }
     setFilteredNotas(result);
   }, [searchTerm, filterMateria, filterAño, notas]);
+
+  const handleCreate = () => {
+    navigate("/notes/create");
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      const response = await fetch(`http://localhost:8080/final-notes/${id}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        alert("Nota eliminada con éxito!");
+        // Actualizar la lista de notas después de eliminar una nota
+        fetchNotas();
+      } else {
+        alert("Error al eliminar la nota. Por favor, inténtelo de nuevo.");
+      }
+    } catch (error) {
+      console.error("Error al eliminar la nota:", error);
+      alert("Error al eliminar la nota. Por favor, inténtelo de nuevo.");
+    }
+  };
 
   const handleSort = (key: NotaKey) => {
     let direction: "ascending" | "descending" = "ascending";
@@ -166,13 +162,13 @@ export const NotesManag = () => {
     });
   };
 
-  const materias = [...new Set(notas.map((nota) => nota.materia))];
-  const años = [...new Set(notas.map((nota) => nota.año))];
+  const materias = [...new Set(notas.map((nota) => nota.subjectName))];
+  const años = [...new Set(notas.map((nota) => nota.year))];
 
   const getNotaBadgeColor = (nota: number) => {
     if (nota >= 9) return "bg-green-500";
     if (nota >= 7) return "bg-blue-500";
-    if (nota >= 5) return "bg-yellow-500";
+    if (nota >= 6) return "bg-yellow-500";
     return "bg-red-500";
   };
 
@@ -181,7 +177,7 @@ export const NotesManag = () => {
     // Add logic to handle new nota submission
     setIsAddDialogOpen(false);
   };
-
+  
   return (
 
       
@@ -256,201 +252,108 @@ export const NotesManag = () => {
           </div>
         </div>
         <div className="overflow-x-auto rounded-lg border border-gray-200">
-          <Table>
-            <TableHeader className="bg-gray-100">
-              <TableRow>
-                <TableHead className="w-[100px]">
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort("nota")}
-                    className="font-semibold"
-                  >
-                    Nota{" "}
-                    {sortConfig.key === "nota" && (
-                      <ArrowUpDown className="ml-2 h-4 w-4" />
-                    )}
+        <Table>
+  <TableHeader className="bg-gray-100">
+    <TableRow>
+      <TableHead className="w-[100px]">
+        <Button
+          variant="ghost"
+          onClick={() => handleSort("nota")}
+          className="font-semibold"
+        >
+          Nota{" "}
+          {sortConfig.key === "nota" && (
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          )}
+        </Button>
+      </TableHead>
+      <TableHead>
+        <Button
+          variant="ghost"
+          onClick={() => handleSort("year")}
+          className="font-semibold"
+        >
+          Año cursada{" "}
+          {sortConfig.key === "year" && (
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          )}
+        </Button>
+      </TableHead>
+      <TableHead>
+        <Button
+          variant="ghost"
+          onClick={() => handleSort("subjectName")}
+          className="font-semibold"
+        >
+          Materia{" "}
+          {sortConfig.key === "subjectName" && (
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          )}
+        </Button>
+      </TableHead>
+      <TableHead>
+        <Button
+          variant="ghost"
+          onClick={() => handleSort("dniStudent")}
+          className="font-semibold"
+        >
+          DNI Estudiante{" "}
+          {sortConfig.key === "dniStudent" && (
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          )}
+        </Button>
+      </TableHead>
+      <TableHead>
+        <Button
+          variant="ghost"
+          onClick={() => handleSort("date")}
+          className="font-semibold"
+        >
+          Fecha registro{" "}
+          {sortConfig.key === "date" && (
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          )}
+        </Button>
+      </TableHead>
+      <TableHead>Acciones</TableHead>
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    {filteredNotas.map((finalNote) => (
+      <TableRow key={finalNote.id} className="hover:bg-gray-50">
+        <TableCell>
+          <Badge
+            className={`${getNotaBadgeColor(finalNote.nota)} text-white`}
+          >
+            {finalNote.nota.toFixed(1)}
+          </Badge>
+        </TableCell>
+        <TableCell>{finalNote.year}</TableCell>
+        <TableCell>{finalNote.subjectName}</TableCell>
+        <TableCell>{finalNote.dniStudent}</TableCell>
+        <TableCell>{finalNote.date.toLocaleString()}</TableCell>
+        <TableCell>
+          <div className="flex space-x-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={() => handleDelete(finalNote.id)}>
+                    <Trash2 className="h-4 w-4 text-red-500" />
                   </Button>
-                </TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort("año")}
-                    className="font-semibold"
-                  >
-                    Año{" "}
-                    {sortConfig.key === "año" && (
-                      <ArrowUpDown className="ml-2 h-4 w-4" />
-                    )}
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort("materia")}
-                    className="font-semibold"
-                  >
-                    Materia{" "}
-                    {sortConfig.key === "materia" && (
-                      <ArrowUpDown className="ml-2 h-4 w-4" />
-                    )}
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort("dni")}
-                    className="font-semibold"
-                  >
-                    DNI{" "}
-                    {sortConfig.key === "dni" && (
-                      <ArrowUpDown className="ml-2 h-4 w-4" />
-                    )}
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort("fecha")}
-                    className="font-semibold"
-                  >
-                    Fecha{" "}
-                    {sortConfig.key === "fecha" && (
-                      <ArrowUpDown className="ml-2 h-4 w-4" />
-                    )}
-                  </Button>
-                </TableHead>
-                <TableHead>Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredNotas.map((nota) => (
-                <TableRow key={nota.id} className="hover:bg-gray-50">
-                  <TableCell>
-                    <Badge
-                      className={`${getNotaBadgeColor(nota.nota)} text-white`}
-                    >
-                      {nota.nota.toFixed(1)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{nota.año}</TableCell>
-                  <TableCell>{nota.materia}</TableCell>
-                  <TableCell>{nota.dni}</TableCell>
-                  <TableCell>{nota.fecha}</TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <Edit className="h-4 w-4 text-blue-500" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Editar nota</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Eliminar nota</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <Info className="h-4 w-4 text-gray-500" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Ver detalles</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                </TooltipTrigger>
+                <TooltipContent >
+                <p>Eliminar nota</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </TableCell>
+      </TableRow>
+    ))}
+  </TableBody>
+</Table>
         </div>
       </CardContent>
-
-      {/* <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Añadir Nueva Nota</DialogTitle>
-            <DialogDescription>
-              Complete los detalles para agregar una nueva nota.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleAddNota}>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="nota" className="text-right">
-                  Nota
-                </Label>
-                <Input
-                  id="nota"
-                  type="number"
-                  min="0"
-                  max="10"
-                  step="0.1"
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="materia" className="text-right">
-                  Materia
-                </Label>
-                <Select>
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Seleccionar materia" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {materias.map((materia) => (
-                      <SelectItem key={materia} value={materia}>
-                        {materia}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="dni" className="text-right">
-                  DNI
-                </Label>
-                <Input id="dni" type="text" className="col-span-3" required />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="fecha" className="text-right">
-                  Fecha
-                </Label>
-                <Input
-                  id="fecha"
-                  type="date"
-                  className="col-span-3"
-                  required
-                />
-              </div>
-            </div>
-            <Dialog>
-              <Button type="submit">Guardar</Button>
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                Cancelar
-              </Button>
-            </Dialog>
-          </form>
-        </DialogContent>
-      </Dialog> */}
     </div>
 
         <Footer></Footer>

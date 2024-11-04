@@ -11,6 +11,7 @@ import NavBar from "./Navbar";
 import Footer from "./Footer";
 import { useNavigate } from "react-router-dom";
 
+
 const carouselImages = [
   "/Codigo.jpg",
   "/comida.jpg",
@@ -19,6 +20,16 @@ const carouselImages = [
   "/programadora.jpg",
   "/ranatouille.jpg",
 ];
+
+    const handleManagment = () => {
+      navigate("/managment");
+    };
+    const handleNote = () => {
+      navigate("/managment");
+    };
+    const handleContact = () => {
+      navigate("/contact");
+    };
 
 export default function DashboardAdmin() {
   const navigate = useNavigate();
