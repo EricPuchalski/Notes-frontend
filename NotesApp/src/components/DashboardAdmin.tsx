@@ -60,7 +60,7 @@ export default function DashboardAdmin() {
 
   return (
     <>
-      <div className="min-h-screen bg-[#fcf3cb] p-0">
+      <div className="">
         <NavBar></NavBar>
         <div
           key={currentImage}
@@ -70,7 +70,7 @@ export default function DashboardAdmin() {
             backgroundSize: "cover",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",
-            minHeight: "400px",
+            minHeight: "500px",
           }}
         >
           <div className="absolute inset-0 bg-black bg-opacity-55 flex items-center justify-center rounded">
